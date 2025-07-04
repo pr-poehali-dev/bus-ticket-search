@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,9 +29,76 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import Icon from "@/components/ui/icon";
+import CarrierForm from "@/components/admin/CarrierForm";
+import BusForm from "@/components/admin/BusForm";
+import RouteForm from "@/components/admin/RouteForm";
+import ScheduleForm from "@/components/admin/ScheduleForm";
+
+// Data Types
+interface Carrier {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  description: string;
+  logo?: string;
+  rating: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+interface Bus {
+  id: number;
+  model: string;
+  plateNumber: string;
+  capacity: number;
+  amenities: string[];
+  carrierId: number;
+  isActive: boolean;
+  year: number;
+  busType: string;
+  description: string;
+}
+
+interface Route {
+  id: number;
+  name: string;
+  fromCity: string;
+  toCity: string;
+  stops: RouteStop[];
+  distance: number;
+  estimatedDuration: string;
+  isActive: boolean;
+  description: string;
+}
+
+interface RouteStop {
+  id: number;
+  name: string;
+  address: string;
+  arrivalTime: string;
+  departureTime: string;
+  order: number;
+}
+
+interface Schedule {
+  id: number;
+  routeId: number;
+  busId: number;
+  carrierId: number;
+  departureTime: string;
+  arrivalTime: string;
+  price: number;
+  daysOfWeek: string[];
+  isActive: boolean;
+  validFrom: string;
+  validUntil: string;
+}
 
 const Index = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -41,78 +108,293 @@ const Index = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
 
-  const popularRoutes = [
-    {
-      from: "Москва",
-      to: "Санкт-Петербург",
-      price: 1200,
-      duration: "8ч 30м",
-      company: "Комфорт Трансфер",
-    },
-    {
-      from: "Москва",
-      to: "Казань",
-      price: 1800,
-      duration: "12ч 15м",
-      company: "Экспресс Тур",
-    },
-    {
-      from: "Санкт-Петербург",
-      to: "Новгород",
-      price: 800,
-      duration: "3ч 45м",
-      company: "Северный Экспресс",
-    },
-    {
-      from: "Москва",
-      to: "Нижний Новгород",
-      price: 1100,
-      duration: "6ч 20м",
-      company: "Волга Транс",
-    },
-  ];
+  // Admin Data States
+  const [carriers, setCarriers] = useState<Carrier[]>([]);
+  const [buses, setBuses] = useState<Bus[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
 
-  const mockResults = [
-    {
-      id: 1,
-      from: "Москва",
-      to: "Санкт-Петербург",
-      departure: "07:30",
-      arrival: "16:00",
-      duration: "8ч 30м",
-      price: 1200,
-      company: "Комфорт Трансфер",
-      busType: "Мерседес Турисмо",
-      amenities: ["Wi-Fi", "Розетки", "Кондиционер", "Туалет"],
-      availableSeats: 12,
-    },
-    {
-      id: 2,
-      from: "Москва",
-      to: "Санкт-Петербург",
-      departure: "14:15",
-      arrival: "22:45",
-      duration: "8ч 30м",
-      price: 1100,
-      company: "Экспресс Тур",
-      busType: "Сетра Топ Класс",
-      amenities: ["Wi-Fi", "Розетки", "Кондиционер"],
-      availableSeats: 8,
-    },
-    {
-      id: 3,
-      from: "Москва",
-      to: "Санкт-Петербург",
-      departure: "22:00",
-      arrival: "06:30",
-      duration: "8ч 30м",
-      price: 950,
-      company: "Ночной Экспресс",
-      busType: "Вольво Люкс",
-      amenities: ["Wi-Fi", "Розетки", "Кондиционер", "Туалет", "Видео"],
-      availableSeats: 15,
-    },
-  ];
+  // Form States
+  const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
+  const [editingBus, setEditingBus] = useState<Bus | null>(null);
+  const [editingRoute, setEditingRoute] = useState<Route | null>(null);
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+
+  // Dialog States
+  const [showCarrierDialog, setShowCarrierDialog] = useState(false);
+  const [showBusDialog, setShowBusDialog] = useState(false);
+  const [showRouteDialog, setShowRouteDialog] = useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+
+  // Initialize data
+  useEffect(() => {
+    initializeData();
+  }, []);
+
+  const initializeData = () => {
+    // Initialize carriers
+    const initialCarriers: Carrier[] = [
+      {
+        id: 1,
+        name: "Комфорт Трансфер",
+        phone: "+7 (800) 555-0123",
+        email: "info@komfort-transfer.ru",
+        description: "Надежный перевозчик с 15-летним опытом",
+        rating: 4.8,
+        isActive: true,
+        createdAt: "2023-01-15",
+      },
+      {
+        id: 2,
+        name: "Экспресс Тур",
+        phone: "+7 (800) 555-0124",
+        email: "contact@express-tour.ru",
+        description: "Быстрые и комфортные перевозки по всей России",
+        rating: 4.5,
+        isActive: true,
+        createdAt: "2023-02-20",
+      },
+      {
+        id: 3,
+        name: "Северный Экспресс",
+        phone: "+7 (800) 555-0125",
+        email: "info@north-express.ru",
+        description: "Специализируемся на северных направлениях",
+        rating: 4.7,
+        isActive: true,
+        createdAt: "2023-03-10",
+      },
+    ];
+
+    // Initialize buses
+    const initialBuses: Bus[] = [
+      {
+        id: 1,
+        model: "Mercedes-Benz Tourismo",
+        plateNumber: "А123АА77",
+        capacity: 49,
+        amenities: ["Wi-Fi", "Розетки", "Кондиционер", "Туалет", "Видео"],
+        carrierId: 1,
+        isActive: true,
+        year: 2022,
+        busType: "Туристический",
+        description: "Комфортабельный автобус для дальних поездок",
+      },
+      {
+        id: 2,
+        model: "Setra TopClass S 516 HD",
+        plateNumber: "В456ВВ77",
+        capacity: 53,
+        amenities: ["Wi-Fi", "Розетки", "Кондиционер", "Туалет"],
+        carrierId: 2,
+        isActive: true,
+        year: 2021,
+        busType: "Междугородный",
+        description: "Современный автобус с повышенным комфортом",
+      },
+      {
+        id: 3,
+        model: "Volvo 9700",
+        plateNumber: "С789СС77",
+        capacity: 45,
+        amenities: ["Wi-Fi", "Розетки", "Кондиционер"],
+        carrierId: 3,
+        isActive: true,
+        year: 2020,
+        busType: "Региональный",
+        description: "Надежный автобус для региональных маршрутов",
+      },
+    ];
+
+    // Initialize routes
+    const initialRoutes: Route[] = [
+      {
+        id: 1,
+        name: "Москва - Санкт-Петербург",
+        fromCity: "Москва",
+        toCity: "Санкт-Петербург",
+        stops: [
+          {
+            id: 1,
+            name: "Автовокзал Москва",
+            address: "Щелковское шоссе, 75",
+            arrivalTime: "07:30",
+            departureTime: "07:30",
+            order: 1,
+          },
+          {
+            id: 2,
+            name: "Тверь",
+            address: "Автовокзал Тверь",
+            arrivalTime: "09:45",
+            departureTime: "10:00",
+            order: 2,
+          },
+          {
+            id: 3,
+            name: "Великий Новгород",
+            address: "Автовокзал В.Новгород",
+            arrivalTime: "12:30",
+            departureTime: "12:45",
+            order: 3,
+          },
+          {
+            id: 4,
+            name: "Автовокзал СПб",
+            address: "Обводный канал, 36",
+            arrivalTime: "16:00",
+            departureTime: "16:00",
+            order: 4,
+          },
+        ],
+        distance: 635,
+        estimatedDuration: "8ч 30м",
+        isActive: true,
+        description: "Популярный маршрут между двумя столицами",
+      },
+      {
+        id: 2,
+        name: "Москва - Казань",
+        fromCity: "Москва",
+        toCity: "Казань",
+        stops: [
+          {
+            id: 5,
+            name: "Автовокзал Москва",
+            address: "Щелковское шоссе, 75",
+            arrivalTime: "20:00",
+            departureTime: "20:00",
+            order: 1,
+          },
+          {
+            id: 6,
+            name: "Владимир",
+            address: "Автовокзал Владимир",
+            arrivalTime: "22:30",
+            departureTime: "22:45",
+            order: 2,
+          },
+          {
+            id: 7,
+            name: "Нижний Новгород",
+            address: "Автовокзал Н.Новгород",
+            arrivalTime: "02:15",
+            departureTime: "02:30",
+            order: 3,
+          },
+          {
+            id: 8,
+            name: "Автовокзал Казань",
+            address: "Девятаева, 10",
+            arrivalTime: "08:15",
+            departureTime: "08:15",
+            order: 4,
+          },
+        ],
+        distance: 815,
+        estimatedDuration: "12ч 15м",
+        isActive: true,
+        description: "Ночной маршрут до столицы Татарстана",
+      },
+    ];
+
+    // Initialize schedules
+    const initialSchedules: Schedule[] = [
+      {
+        id: 1,
+        routeId: 1,
+        busId: 1,
+        carrierId: 1,
+        departureTime: "07:30",
+        arrivalTime: "16:00",
+        price: 1200,
+        daysOfWeek: [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday",
+        ],
+        isActive: true,
+        validFrom: "2024-01-01",
+        validUntil: "2024-12-31",
+      },
+      {
+        id: 2,
+        routeId: 1,
+        busId: 2,
+        carrierId: 2,
+        departureTime: "14:15",
+        arrivalTime: "22:45",
+        price: 1100,
+        daysOfWeek: ["monday", "wednesday", "friday", "sunday"],
+        isActive: true,
+        validFrom: "2024-01-01",
+        validUntil: "2024-12-31",
+      },
+      {
+        id: 3,
+        routeId: 2,
+        busId: 3,
+        carrierId: 3,
+        departureTime: "20:00",
+        arrivalTime: "08:15",
+        price: 1800,
+        daysOfWeek: ["tuesday", "thursday", "saturday"],
+        isActive: true,
+        validFrom: "2024-01-01",
+        validUntil: "2024-12-31",
+      },
+    ];
+
+    setCarriers(initialCarriers);
+    setBuses(initialBuses);
+    setRoutes(initialRoutes);
+    setSchedules(initialSchedules);
+  };
+
+  // Dynamic popular routes from schedules
+  const popularRoutes = schedules
+    .filter((schedule) => schedule.isActive)
+    .map((schedule) => {
+      const route = routes.find((r) => r.id === schedule.routeId);
+      const carrier = carriers.find((c) => c.id === schedule.carrierId);
+      return {
+        from: route?.fromCity || "",
+        to: route?.toCity || "",
+        price: schedule.price,
+        duration: route?.estimatedDuration || "",
+        company: carrier?.name || "",
+      };
+    })
+    .slice(0, 4);
+
+  // Dynamic search results from schedules
+  const generateSearchResults = () => {
+    return schedules
+      .filter((schedule) => schedule.isActive)
+      .map((schedule) => {
+        const route = routes.find((r) => r.id === schedule.routeId);
+        const bus = buses.find((b) => b.id === schedule.busId);
+        const carrier = carriers.find((c) => c.id === schedule.carrierId);
+
+        return {
+          id: schedule.id,
+          from: route?.fromCity || "",
+          to: route?.toCity || "",
+          departure: schedule.departureTime,
+          arrival: schedule.arrivalTime,
+          duration: route?.estimatedDuration || "",
+          price: schedule.price,
+          company: carrier?.name || "",
+          busType: bus?.model || "",
+          amenities: bus?.amenities || [],
+          availableSeats: Math.floor(Math.random() * 20) + 5, // Random available seats
+        };
+      });
+  };
 
   const reviews = [
     {
@@ -136,7 +418,8 @@ const Index = () => {
   ];
 
   const handleSearch = () => {
-    setSearchResults(mockResults);
+    const results = generateSearchResults();
+    setSearchResults(results);
     setShowResults(true);
   };
 
@@ -176,25 +459,101 @@ const Index = () => {
     return seats;
   };
 
-  const AdminPanel = () => {
-    const [routes, setRoutes] = useState([
-      {
-        id: 1,
-        from: "Москва",
-        to: "Санкт-Петербург",
-        price: 1200,
-        status: "active",
-      },
-      { id: 2, from: "Москва", to: "Казань", price: 1800, status: "active" },
-      {
-        id: 3,
-        from: "Санкт-Петербург",
-        to: "Новгород",
-        price: 800,
-        status: "inactive",
-      },
-    ]);
+  // Admin Functions
+  const saveCarrier = (carrier: Omit<Carrier, "id" | "createdAt">) => {
+    if (editingCarrier) {
+      setCarriers((prev) =>
+        prev.map((c) =>
+          c.id === editingCarrier.id
+            ? {
+                ...carrier,
+                id: editingCarrier.id,
+                createdAt: editingCarrier.createdAt,
+              }
+            : c,
+        ),
+      );
+    } else {
+      const newCarrier = {
+        ...carrier,
+        id: Date.now(),
+        createdAt: new Date().toISOString(),
+      };
+      setCarriers((prev) => [...prev, newCarrier]);
+    }
+    setEditingCarrier(null);
+    setShowCarrierDialog(false);
+  };
 
+  const saveBus = (bus: Omit<Bus, "id">) => {
+    if (editingBus) {
+      setBuses((prev) =>
+        prev.map((b) =>
+          b.id === editingBus.id ? { ...bus, id: editingBus.id } : b,
+        ),
+      );
+    } else {
+      const newBus = { ...bus, id: Date.now() };
+      setBuses((prev) => [...prev, newBus]);
+    }
+    setEditingBus(null);
+    setShowBusDialog(false);
+  };
+
+  const saveRoute = (route: Omit<Route, "id">) => {
+    if (editingRoute) {
+      setRoutes((prev) =>
+        prev.map((r) =>
+          r.id === editingRoute.id ? { ...route, id: editingRoute.id } : r,
+        ),
+      );
+    } else {
+      const newRoute = { ...route, id: Date.now() };
+      setRoutes((prev) => [...prev, newRoute]);
+    }
+    setEditingRoute(null);
+    setShowRouteDialog(false);
+  };
+
+  const saveSchedule = (schedule: Omit<Schedule, "id">) => {
+    if (editingSchedule) {
+      setSchedules((prev) =>
+        prev.map((s) =>
+          s.id === editingSchedule.id
+            ? { ...schedule, id: editingSchedule.id }
+            : s,
+        ),
+      );
+    } else {
+      const newSchedule = { ...schedule, id: Date.now() };
+      setSchedules((prev) => [...prev, newSchedule]);
+    }
+    setEditingSchedule(null);
+    setShowScheduleDialog(false);
+  };
+
+  const deleteCarrier = (id: number) => {
+    setCarriers((prev) => prev.filter((c) => c.id !== id));
+    // Also remove related buses and schedules
+    setBuses((prev) => prev.filter((b) => b.carrierId !== id));
+    setSchedules((prev) => prev.filter((s) => s.carrierId !== id));
+  };
+
+  const deleteBus = (id: number) => {
+    setBuses((prev) => prev.filter((b) => b.id !== id));
+    setSchedules((prev) => prev.filter((s) => s.busId !== id));
+  };
+
+  const deleteRoute = (id: number) => {
+    setRoutes((prev) => prev.filter((r) => r.id !== id));
+    setSchedules((prev) => prev.filter((s) => s.routeId !== id));
+  };
+
+  const deleteSchedule = (id: number) => {
+    setSchedules((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const AdminPanel = () => {
     const [bookings, setBookings] = useState([
       {
         id: 1,
@@ -232,48 +591,118 @@ const Index = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="routes" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="carriers" className="w-full">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="carriers">Перевозчики</TabsTrigger>
+            <TabsTrigger value="buses">Автобусы</TabsTrigger>
             <TabsTrigger value="routes">Маршруты</TabsTrigger>
+            <TabsTrigger value="schedules">Рейсы</TabsTrigger>
             <TabsTrigger value="bookings">Бронирования</TabsTrigger>
             <TabsTrigger value="analytics">Аналитика</TabsTrigger>
-            <TabsTrigger value="settings">Настройки</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="routes" className="space-y-4">
+          <TabsContent value="carriers" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Управление маршрутами</h2>
-              <Button>
-                <Icon name="Plus" className="mr-2" />
-                Добавить маршрут
-              </Button>
+              <h2 className="text-xl font-semibold">
+                Управление перевозчиками
+              </h2>
+              <Dialog
+                open={showCarrierDialog}
+                onOpenChange={setShowCarrierDialog}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      setEditingCarrier(null);
+                      setShowCarrierDialog(true);
+                    }}
+                  >
+                    <Icon name="Plus" className="mr-2" />
+                    Добавить перевозчика
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingCarrier
+                        ? "Редактировать перевозчика"
+                        : "Добавить перевозчика"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <CarrierForm
+                    carrier={editingCarrier}
+                    onSave={saveCarrier}
+                    onCancel={() => setShowCarrierDialog(false)}
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
 
             <div className="grid gap-4">
-              {routes.map((route) => (
-                <Card key={route.id}>
+              {carriers.map((carrier) => (
+                <Card key={carrier.id}>
                   <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold">
-                          {route.from} → {route.to}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          Цена: {route.price} ₽
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-lg">
+                            {carrier.name}
+                          </h3>
+                          <div className="flex items-center gap-1">
+                            <Icon
+                              name="Star"
+                              className="h-4 w-4 text-yellow-400 fill-current"
+                            />
+                            <span className="text-sm">{carrier.rating}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                          <div>
+                            <p>
+                              <strong>Телефон:</strong> {carrier.phone}
+                            </p>
+                            <p>
+                              <strong>Email:</strong> {carrier.email}
+                            </p>
+                          </div>
+                          <div>
+                            <p>
+                              <strong>Создан:</strong> {carrier.createdAt}
+                            </p>
+                            <p>
+                              <strong>Автобусов:</strong>{" "}
+                              {
+                                buses.filter((b) => b.carrierId === carrier.id)
+                                  .length
+                              }
+                            </p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm text-gray-700">
+                          {carrier.description}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge
-                          variant={
-                            route.status === "active" ? "default" : "secondary"
-                          }
+                          variant={carrier.isActive ? "default" : "secondary"}
                         >
-                          {route.status === "active" ? "Активен" : "Неактивен"}
+                          {carrier.isActive ? "Активен" : "Неактивен"}
                         </Badge>
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingCarrier(carrier);
+                            setShowCarrierDialog(true);
+                          }}
+                        >
                           <Icon name="Edit" className="h-4 w-4" />
                         </Button>
-                        <Button variant="destructive" size="sm">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteCarrier(carrier.id)}
+                        >
                           <Icon name="Trash2" className="h-4 w-4" />
                         </Button>
                       </div>
@@ -281,6 +710,349 @@ const Index = () => {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="buses" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Управление автобусами</h2>
+              <Dialog open={showBusDialog} onOpenChange={setShowBusDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      setEditingBus(null);
+                      setShowBusDialog(true);
+                    }}
+                  >
+                    <Icon name="Plus" className="mr-2" />
+                    Добавить автобус
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingBus
+                        ? "Редактировать автобус"
+                        : "Добавить автобус"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <BusForm
+                    bus={editingBus}
+                    carriers={carriers}
+                    onSave={saveBus}
+                    onCancel={() => setShowBusDialog(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid gap-4">
+              {buses.map((bus) => {
+                const carrier = carriers.find((c) => c.id === bus.carrierId);
+                return (
+                  <Card key={bus.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">
+                              {bus.model}
+                            </h3>
+                            <Badge variant="outline">{bus.plateNumber}</Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                            <div>
+                              <p>
+                                <strong>Перевозчик:</strong> {carrier?.name}
+                              </p>
+                              <p>
+                                <strong>Тип:</strong> {bus.busType}
+                              </p>
+                              <p>
+                                <strong>Год:</strong> {bus.year}
+                              </p>
+                            </div>
+                            <div>
+                              <p>
+                                <strong>Вместимость:</strong> {bus.capacity}{" "}
+                                мест
+                              </p>
+                              <p>
+                                <strong>Удобства:</strong>{" "}
+                                {bus.amenities.join(", ")}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="mt-2 text-sm text-gray-700">
+                            {bus.description}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={bus.isActive ? "default" : "secondary"}
+                          >
+                            {bus.isActive ? "Активен" : "Неактивен"}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingBus(bus);
+                              setShowBusDialog(true);
+                            }}
+                          >
+                            <Icon name="Edit" className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteBus(bus.id)}
+                          >
+                            <Icon name="Trash2" className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="routes" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Управление маршрутами</h2>
+              <Dialog open={showRouteDialog} onOpenChange={setShowRouteDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      setEditingRoute(null);
+                      setShowRouteDialog(true);
+                    }}
+                  >
+                    <Icon name="Plus" className="mr-2" />
+                    Добавить маршрут
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingRoute
+                        ? "Редактировать маршрут"
+                        : "Добавить маршрут"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <RouteForm
+                    route={editingRoute}
+                    onSave={saveRoute}
+                    onCancel={() => setShowRouteDialog(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid gap-4">
+              {routes.map((route) => (
+                <Card key={route.id}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-lg">
+                            {route.name}
+                          </h3>
+                          <Icon
+                            name="ArrowRight"
+                            className="h-4 w-4 text-gray-400"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                          <div>
+                            <p>
+                              <strong>Направление:</strong> {route.fromCity} →{" "}
+                              {route.toCity}
+                            </p>
+                            <p>
+                              <strong>Расстояние:</strong> {route.distance} км
+                            </p>
+                            <p>
+                              <strong>Время в пути:</strong>{" "}
+                              {route.estimatedDuration}
+                            </p>
+                          </div>
+                          <div>
+                            <p>
+                              <strong>Остановок:</strong> {route.stops.length}
+                            </p>
+                            <p>
+                              <strong>Рейсов:</strong>{" "}
+                              {
+                                schedules.filter((s) => s.routeId === route.id)
+                                  .length
+                              }
+                            </p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm text-gray-700">
+                          {route.description}
+                        </p>
+                        <div className="mt-3">
+                          <p className="text-sm font-medium mb-1">Остановки:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {route.stops.map((stop) => (
+                              <Badge
+                                key={stop.id}
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {stop.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={route.isActive ? "default" : "secondary"}
+                        >
+                          {route.isActive ? "Активен" : "Неактивен"}
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingRoute(route);
+                            setShowRouteDialog(true);
+                          }}
+                        >
+                          <Icon name="Edit" className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteRoute(route.id)}
+                        >
+                          <Icon name="Trash2" className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="schedules" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Управление рейсами</h2>
+              <Dialog
+                open={showScheduleDialog}
+                onOpenChange={setShowScheduleDialog}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      setEditingSchedule(null);
+                      setShowScheduleDialog(true);
+                    }}
+                  >
+                    <Icon name="Plus" className="mr-2" />
+                    Добавить рейс
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingSchedule ? "Редактировать рейс" : "Добавить рейс"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <ScheduleForm
+                    schedule={editingSchedule}
+                    routes={routes}
+                    buses={buses}
+                    carriers={carriers}
+                    onSave={saveSchedule}
+                    onCancel={() => setShowScheduleDialog(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid gap-4">
+              {schedules.map((schedule) => {
+                const route = routes.find((r) => r.id === schedule.routeId);
+                const bus = buses.find((b) => b.id === schedule.busId);
+                const carrier = carriers.find(
+                  (c) => c.id === schedule.carrierId,
+                );
+
+                return (
+                  <Card key={schedule.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">
+                              {route?.name}
+                            </h3>
+                            <Badge variant="outline">{schedule.price} ₽</Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                            <div>
+                              <p>
+                                <strong>Перевозчик:</strong> {carrier?.name}
+                              </p>
+                              <p>
+                                <strong>Автобус:</strong> {bus?.model}
+                              </p>
+                              <p>
+                                <strong>Время:</strong> {schedule.departureTime}{" "}
+                                - {schedule.arrivalTime}
+                              </p>
+                            </div>
+                            <div>
+                              <p>
+                                <strong>Дни недели:</strong>{" "}
+                                {schedule.daysOfWeek.join(", ")}
+                              </p>
+                              <p>
+                                <strong>Действует:</strong> {schedule.validFrom}{" "}
+                                - {schedule.validUntil}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              schedule.isActive ? "default" : "secondary"
+                            }
+                          >
+                            {schedule.isActive ? "Активен" : "Неактивен"}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingSchedule(schedule);
+                              setShowScheduleDialog(true);
+                            }}
+                          >
+                            <Icon name="Edit" className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteSchedule(schedule.id)}
+                          >
+                            <Icon name="Trash2" className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </TabsContent>
 
