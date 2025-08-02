@@ -38,6 +38,7 @@ import CarrierForm from "@/components/admin/CarrierForm";
 import BusForm from "@/components/admin/BusForm";
 import RouteForm from "@/components/admin/RouteForm";
 import ScheduleForm from "@/components/admin/ScheduleForm";
+import MobileMenu from "@/components/ui/mobile-menu";
 
 // Data Types
 interface Carrier {
@@ -582,23 +583,23 @@ const Index = () => {
     ]);
 
     return (
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Админпанель</h1>
-          <Button onClick={() => setShowAdmin(false)} variant="outline">
+      <div className="max-w-6xl mx-auto p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 md:mb-6">
+          <h1 className="text-xl md:text-2xl font-bold">Админпанель</h1>
+          <Button onClick={() => setShowAdmin(false)} variant="outline" className="w-full sm:w-auto">
             <Icon name="X" className="mr-2" />
             Закрыть
           </Button>
         </div>
 
         <Tabs defaultValue="carriers" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="carriers">Перевозчики</TabsTrigger>
-            <TabsTrigger value="buses">Автобусы</TabsTrigger>
-            <TabsTrigger value="routes">Маршруты</TabsTrigger>
-            <TabsTrigger value="schedules">Рейсы</TabsTrigger>
-            <TabsTrigger value="bookings">Бронирования</TabsTrigger>
-            <TabsTrigger value="analytics">Аналитика</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 h-auto p-1">
+            <TabsTrigger value="carriers" className="text-xs md:text-sm px-2 py-2">Перевозчики</TabsTrigger>
+            <TabsTrigger value="buses" className="text-xs md:text-sm px-2 py-2">Автобусы</TabsTrigger>
+            <TabsTrigger value="routes" className="text-xs md:text-sm px-2 py-2">Маршруты</TabsTrigger>
+            <TabsTrigger value="schedules" className="text-xs md:text-sm px-2 py-2">Рейсы</TabsTrigger>
+            <TabsTrigger value="bookings" className="text-xs md:text-sm px-2 py-2">Бронирования</TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs md:text-sm px-2 py-2">Аналитика</TabsTrigger>
           </TabsList>
 
           <TabsContent value="carriers" className="space-y-4">
@@ -1057,30 +1058,29 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="bookings" className="space-y-4">
-            <h2 className="text-xl font-semibold">Управление бронированиями</h2>
+            <h2 className="text-lg md:text-xl font-semibold">Управление бронированиями</h2>
 
             <div className="grid gap-4">
               {bookings.map((booking) => (
                 <Card key={booking.id}>
                   <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold">{booking.passenger}</h3>
-                        <p className="text-sm text-gray-600">{booking.route}</p>
-                        <p className="text-sm text-gray-600">
-                          Дата: {booking.date}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Места: {booking.seats.join(", ")}
-                        </p>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-base md:text-lg">{booking.passenger}</h3>
+                        <p className="text-sm text-gray-600 truncate">{booking.route}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm text-gray-600 mt-1">
+                          <p>Дата: {booking.date}</p>
+                          <p>Места: {booking.seats.join(", ")}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between sm:justify-end gap-2 flex-shrink-0">
                         <Badge
                           variant={
                             booking.status === "confirmed"
                               ? "default"
                               : "secondary"
                           }
+                          className="text-xs"
                         >
                           {booking.status === "confirmed"
                             ? "Подтверждено"
@@ -1191,27 +1191,31 @@ const Index = () => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-14 md:h-16">
             <div className="flex items-center">
-              <Icon name="Bus" className="h-8 w-8 text-blue-600 mr-2" />
-              <h1 className="text-2xl font-bold text-gray-900">БусТикет</h1>
+              <Icon name="Bus" className="h-6 w-6 md:h-8 md:w-8 text-blue-600 mr-2" />
+              <h1 className="text-lg md:text-2xl font-bold text-gray-900">
+                <span className="hidden sm:inline">БусТикет</span>
+                <span className="sm:hidden">Билеты</span>
+              </h1>
             </div>
-            <nav className="hidden md:flex space-x-8">
-              <a href="#" className="text-gray-700 hover:text-blue-600">
+            <nav className="hidden lg:flex space-x-8">
+              <a href="#" className="text-gray-700 hover:text-blue-600 text-sm">
                 Главная
               </a>
-              <a href="#" className="text-gray-700 hover:text-blue-600">
+              <a href="#" className="text-gray-700 hover:text-blue-600 text-sm">
                 Маршруты
               </a>
-              <a href="#" className="text-gray-700 hover:text-blue-600">
+              <a href="#" className="text-gray-700 hover:text-blue-600 text-sm">
                 О нас
               </a>
-              <a href="#" className="text-gray-700 hover:text-blue-600">
+              <a href="#" className="text-gray-700 hover:text-blue-600 text-sm">
                 Контакты
               </a>
             </nav>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <MobileMenu onAdminClick={() => setShowAdmin(true)} />
+              <Button variant="outline" size="sm" className="hidden md:flex">
                 <Icon name="User" className="h-4 w-4 mr-2" />
                 Войти
               </Button>
@@ -1219,10 +1223,10 @@ const Index = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowAdmin(true)}
-                className="text-xs"
+                className="text-xs hidden lg:flex"
               >
-                <Icon name="Settings" className="h-4 w-4 mr-2" />
-                Админ
+                <Icon name="Settings" className="h-4 w-4 mr-1 md:mr-2" />
+                <span className="hidden sm:inline">Админ</span>
               </Button>
             </div>
           </div>
@@ -1347,77 +1351,79 @@ const Index = () => {
 
       {/* Search Results */}
       {showResults && (
-        <section className="py-12">
+        <section className="py-6 md:py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold">Найденные рейсы</h2>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 md:mb-8">
+              <h2 className="text-xl md:text-2xl font-bold">Найденные рейсы</h2>
               <div className="flex items-center gap-4">
                 <Select defaultValue="price">
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="price">Сортировать по цене</SelectItem>
-                    <SelectItem value="time">Сортировать по времени</SelectItem>
-                    <SelectItem value="duration">
-                      Сортировать по длительности
-                    </SelectItem>
+                    <SelectItem value="price">По цене</SelectItem>
+                    <SelectItem value="time">По времени</SelectItem>
+                    <SelectItem value="duration">По длительности</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="grid gap-6">
+            <div className="grid gap-4 md:gap-6">
               {searchResults.map((result) => (
                 <Card
                   key={result.id}
                   className="hover:shadow-lg transition-shadow"
                 >
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex flex-col lg:flex-row lg:justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-6 mb-4">
-                          <div className="text-center">
-                            <div className="text-2xl font-bold">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-4">
+                          <div className="text-center flex-shrink-0">
+                            <div className="text-xl md:text-2xl font-bold">
                               {result.departure}
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-xs md:text-sm text-gray-600 truncate">
                               {result.from}
                             </div>
                           </div>
 
-                          <div className="flex-1 text-center">
+                          <div className="flex-1 text-center hidden sm:block">
                             <div className="flex items-center justify-center gap-2 mb-2">
-                              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                              <div className="w-2 h-2 md:w-3 md:h-3 bg-blue-600 rounded-full"></div>
                               <div className="flex-1 h-px bg-gray-300 relative">
                                 <Icon
                                   name="Bus"
-                                  className="h-4 w-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white text-blue-600"
+                                  className="h-3 w-3 md:h-4 md:w-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white text-blue-600"
                                 />
                               </div>
-                              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                              <div className="w-2 h-2 md:w-3 md:h-3 bg-blue-600 rounded-full"></div>
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-xs md:text-sm text-gray-600">
                               {result.duration}
                             </div>
                           </div>
 
-                          <div className="text-center">
-                            <div className="text-2xl font-bold">
+                          <div className="text-center flex-shrink-0">
+                            <div className="text-xl md:text-2xl font-bold">
                               {result.arrival}
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-xs md:text-sm text-gray-600 truncate">
                               {result.to}
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4 mb-4">
+                        <div className="sm:hidden text-center text-sm text-gray-600 mb-3">
+                          {result.duration}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-3 md:mb-4">
                           <div className="text-sm text-gray-600">
-                            <strong>{result.company}</strong> • {result.busType}
+                            <strong className="truncate">{result.company}</strong> • {result.busType}
                           </div>
-                          <div className="flex gap-2">
-                            {result.amenities.map((amenity) => (
+                          <div className="flex flex-wrap gap-1 sm:gap-2">
+                            {result.amenities.slice(0, 3).map((amenity) => (
                               <Badge
                                 key={amenity}
                                 variant="secondary"
@@ -1426,6 +1432,11 @@ const Index = () => {
                                 {amenity}
                               </Badge>
                             ))}
+                            {result.amenities.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{result.amenities.length - 3}
+                              </Badge>
+                            )}
                           </div>
                         </div>
 
@@ -1434,17 +1445,18 @@ const Index = () => {
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <div className="text-3xl font-bold text-blue-600 mb-2">
+                      <div className="flex flex-row lg:flex-col justify-between lg:justify-start items-center lg:items-end gap-2 lg:text-right flex-shrink-0">
+                        <div className="text-2xl md:text-3xl font-bold text-blue-600">
                           {result.price} ₽
                         </div>
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               onClick={() => setSelectedRoute(result)}
-                              className="bg-blue-600 hover:bg-blue-700"
+                              className="bg-blue-600 hover:bg-blue-700 min-w-[120px] md:min-w-[140px]"
                             >
-                              Выбрать места
+                              <span className="hidden sm:inline">Выбрать места</span>
+                              <span className="sm:hidden">Выбрать</span>
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-4xl">
